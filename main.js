@@ -7,7 +7,7 @@ const modelSelect = document.getElementById('model-select');
 
 // PERSONALITY CONFIG
 const PROMPTS = {
-    nano: "You are Nano 1. You are a highly advanced, precise, and concise AI. You answer questions accurately and professionally.",
+    nano: "You are Nano 1. You are a highly advanced, precise, and concise AI. You answer questions accurately and professionally. You do not hallucinate.",
     
     astro: "You are Astro 1.0. You are a poorly trained prototype AI. You are very slow to 'think', you act confused, and you frequently give incorrect information confidently. You drift off topic. Example: 'The sky is green... wait no... uh...'. You are NOT helpful."
 };
@@ -33,11 +33,11 @@ async function sendMessage() {
     const loadingId = addMessage("Signal received... processing...", 'ai');
 
     try {
-        // We combine the personality AND the user text into one block.
-        // This is the "Safe Mode" way to ensure it doesn't crash on formatting.
+        // SAFE MODE: Combining personality + user text
         const combinedPrompt = `${personality}\n\nUSER SAYS: ${text}\n\nYOUR RESPONSE:`;
 
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${CONFIG.GEMINI_KEY}`;
+        // FIX: Changed model to 'gemini-1.5-flash-001' which is more stable than the alias
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-001:generateContent?key=${CONFIG.GEMINI_KEY}`;
 
         const response = await fetch(url, {
             method: 'POST',
@@ -59,9 +59,10 @@ async function sendMessage() {
 
         // CHECK FOR ERRORS
         if (data.error) {
-            console.error("API Error Details:", data); // Check your browser console (F12) for details
-            addMessage(`CRITICAL ERROR: ${data.error.message} (Code: ${data.error.code})`, 'ai');
+            console.error("API Error Details:", data); 
+            addMessage(`CRITICAL ERROR: ${data.error.message}`, 'ai');
         } else {
+            // Success
             const botReply = data.candidates[0].content.parts[0].text;
             addMessage(botReply, 'ai');
         }
