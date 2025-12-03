@@ -1,3 +1,5 @@
+// main.js
+
 const chatBox = document.getElementById('chat-box');
 const userInput = document.getElementById('user-input');
 const sendBtn = document.getElementById('send-btn');
@@ -5,7 +7,7 @@ const modelSelect = document.getElementById('model-select');
 
 // PERSONALITY CONFIG
 const PROMPTS = {
-    nano: "You are Nano 1. You are a highly advanced, precise, and concise AI. You answer questions accurately and professionally. You do not hallucinate.",
+    nano: "You are Nano 1. You are a highly advanced, precise, and concise AI. You answer questions accurately and professionally.",
     
     astro: "You are Astro 1.0. You are a poorly trained prototype AI. You are very slow to 'think', you act confused, and you frequently give incorrect information confidently. You drift off topic. Example: 'The sky is green... wait no... uh...'. You are NOT helpful."
 };
@@ -25,14 +27,16 @@ async function sendMessage() {
 
     // 2. Get settings
     const currentModel = modelSelect.value;
-    const systemInstruction = PROMPTS[currentModel];
+    const personality = PROMPTS[currentModel];
     
     // Loading indicator
-    const loadingId = addMessage("Computing...", 'ai');
+    const loadingId = addMessage("Signal received... processing...", 'ai');
 
     try {
-        // 3. HIT GEMINI API
-        // We use gemini-1.5-flash because it's fast and cheap (or free tier)
+        // We combine the personality AND the user text into one block.
+        // This is the "Safe Mode" way to ensure it doesn't crash on formatting.
+        const combinedPrompt = `${personality}\n\nUSER SAYS: ${text}\n\nYOUR RESPONSE:`;
+
         const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${CONFIG.GEMINI_KEY}`;
 
         const response = await fetch(url, {
@@ -42,15 +46,8 @@ async function sendMessage() {
             },
             body: JSON.stringify({
                 contents: [{
-                    parts: [{ text: text }]
-                }],
-                system_instruction: {
-                    parts: [{ text: systemInstruction }]
-                },
-                generationConfig: {
-                    // Astro gets high temp (chaos), Nano gets low temp (strict)
-                    temperature: currentModel === 'astro' ? 1.5 : 0.2
-                }
+                    parts: [{ text: combinedPrompt }]
+                }]
             })
         });
 
@@ -60,17 +57,20 @@ async function sendMessage() {
         const loadingDiv = document.querySelector(`[data-id="${loadingId}"]`);
         if (loadingDiv) loadingDiv.remove();
 
+        // CHECK FOR ERRORS
         if (data.error) {
-            addMessage("System Error: " + data.error.message, 'ai');
+            console.error("API Error Details:", data); // Check your browser console (F12) for details
+            addMessage(`CRITICAL ERROR: ${data.error.message} (Code: ${data.error.code})`, 'ai');
         } else {
-            // Gemini response structure is deep
             const botReply = data.candidates[0].content.parts[0].text;
             addMessage(botReply, 'ai');
         }
 
     } catch (error) {
         console.error(error);
-        addMessage("Network Failure. Check API Key.", 'ai');
+        const loadingDiv = document.querySelector(`[data-id="${loadingId}"]`);
+        if (loadingDiv) loadingDiv.remove();
+        addMessage("Network Error: Could not reach Google Servers.", 'ai');
     }
 }
 
