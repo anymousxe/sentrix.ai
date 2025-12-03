@@ -1,4 +1,4 @@
-// config.js
 const CONFIG = {
-    API_KEY: "AIzaSyAHngrmqjD-XmLp6aT693s6kezDBR_1JW8"
+    // Make sure no spaces before or after the key!
+    GEMINI_KEY: "AIzaSyAHngrmqjD-XmLp6aT693s6kezDBR_1JW8" 
 };
