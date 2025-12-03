@@ -8,8 +8,7 @@ const modelSelect = document.getElementById('model-select');
 // PERSONALITY CONFIG
 const PROMPTS = {
     nano: "You are Nano 1. You are a highly advanced, precise, and concise AI. You answer questions accurately and professionally. You do not hallucinate.",
-    
-    astro: "You are Astro 1.0. You are a poorly trained prototype AI. You are very slow to 'think', you act confused, and you frequently give incorrect information confidently. You drift off topic. Example: 'The sky is green... wait no... uh...'. You are NOT helpful."
+    astro: "You are Astro 1.0. You are a poorly trained prototype AI. You are very slow to 'think', you act confused, and you frequently give incorrect information confidently. Example: 'The sky is green... wait no...'. You are NOT helpful."
 };
 
 sendBtn.addEventListener('click', sendMessage);
@@ -29,61 +28,52 @@ async function sendMessage() {
     const currentModel = modelSelect.value;
     const personality = PROMPTS[currentModel];
     
-    // Loading indicator
-    const loadingId = addMessage("Signal received... processing...", 'ai');
+    addMessage("Computing...", 'ai-loading');
 
     try {
-        // SAFE MODE: Combining personality + user text
         const combinedPrompt = `${personality}\n\nUSER SAYS: ${text}\n\nYOUR RESPONSE:`;
 
-        // FIX: Changed model to 'gemini-1.5-flash-001' which is more stable than the alias
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-001:generateContent?key=${CONFIG.GEMINI_KEY}`;
+        // *** IMPORTANT: CHANGE THIS MODEL NAME IF 'test.html' GAVE YOU A DIFFERENT ONE ***
+        // We are trying 'gemini-2.5-flash' because 1.5 is old now.
+        const MODEL_NAME = "gemini-2.5-flash"; 
+        
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL_NAME}:generateContent?key=${CONFIG.GEMINI_KEY}`;
 
         const response = await fetch(url, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                contents: [{
-                    parts: [{ text: combinedPrompt }]
-                }]
+                contents: [{ parts: [{ text: combinedPrompt }] }]
             })
         });
 
         const data = await response.json();
 
         // Remove loading text
-        const loadingDiv = document.querySelector(`[data-id="${loadingId}"]`);
-        if (loadingDiv) loadingDiv.remove();
+        const loaders = document.querySelectorAll('.ai-loading');
+        loaders.forEach(el => el.remove());
 
-        // CHECK FOR ERRORS
         if (data.error) {
-            console.error("API Error Details:", data); 
-            addMessage(`CRITICAL ERROR: ${data.error.message}`, 'ai');
+            console.error("API Error:", data);
+            addMessage(`SYSTEM ERROR: ${data.error.message}`, 'ai');
+            addMessage(`(Tip: Open test.html to see valid model names)`, 'ai');
         } else {
-            // Success
             const botReply = data.candidates[0].content.parts[0].text;
             addMessage(botReply, 'ai');
         }
 
     } catch (error) {
         console.error(error);
-        const loadingDiv = document.querySelector(`[data-id="${loadingId}"]`);
-        if (loadingDiv) loadingDiv.remove();
-        addMessage("Network Error: Could not reach Google Servers.", 'ai');
+        const loaders = document.querySelectorAll('.ai-loading');
+        loaders.forEach(el => el.remove());
+        addMessage("Network Error. Check console.", 'ai');
     }
 }
 
-function addMessage(text, sender) {
+function addMessage(text, type) {
     const div = document.createElement('div');
-    div.classList.add('message', sender);
+    div.className = `message ${type}`;
     div.innerText = text;
-    
-    const id = Date.now();
-    div.setAttribute('data-id', id);
-    
     chatBox.appendChild(div);
     chatBox.scrollTop = chatBox.scrollHeight;
-    return id;
 }
