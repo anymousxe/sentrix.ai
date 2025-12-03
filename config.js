@@ -1,4 +1,4 @@
 // config.js
 const CONFIG = {
-    API_KEY: "sk-proj-..." // Paste your actual API key inside these quotes
+    API_KEY: "AIzaSyAHngrmqjD-XmLp6aT693s6kezDBR_1JW8"
 };
